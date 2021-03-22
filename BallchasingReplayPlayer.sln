@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31112.23
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BallchasingReplayPlayer", "BallchasingReplayPlayer\BallchasingReplayPlayer.vcxproj", "{5A6515A7-6F91-4BEF-9DFC-D3465E931EAF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5A6515A7-6F91-4BEF-9DFC-D3465E931EAF}.Release|x64.ActiveCfg = Release|x64
+		{5A6515A7-6F91-4BEF-9DFC-D3465E931EAF}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {12F1904F-329C-477C-95CB-14F497AD93C8}
+	EndGlobalSection
+EndGlobal
