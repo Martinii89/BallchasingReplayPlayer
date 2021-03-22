@@ -1,86 +1,82 @@
 #include "pch.h"
 #include "SettingsManager.h"
-
-#include <stdio.h>
+#include <windows.h>
 #include <tchar.h>
 #include <iostream>
 
 
-const std::wstring RegisterySettingsManager::REGISTRY_DIR = std::wstring(L"SOFTWARE\\BakkesMod");
-const std::wstring RegisterySettingsManager::REGISTRY_DIR_APPPATH = std::wstring(L"SOFTWARE\\BakkesMod\\AppPath");
-const std::wstring RegisterySettingsManager::REGISTRY_DIR_RUN = std::wstring(L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run");
-
-HKEY RegisterySettingsManager::GetKey(std::wstring subKey, HKEY key)
+HKEY RegisterySettingsManager::GetKey(const std::wstring& sub_key, HKEY key)
 {
-	HKEY hKey;
-	LONG currentUserOpen = RegOpenKeyExW(key, subKey.c_str(), 0, KEY_ALL_ACCESS, &hKey);
-	if (currentUserOpen != ERROR_SUCCESS) {
-		LONG setValueRes = RegCreateKeyW(key, subKey.c_str(), &hKey);// (hKey, key.c_str(), 0, REG_SZ, (LPBYTE)setting.c_str(), (setting.size() + 1) * sizeof(wchar_t));
-		std::cout << setValueRes;
+	HKEY h_key;
+	const auto current_user_open = RegOpenKeyExW(key, sub_key.c_str(), 0, KEY_ALL_ACCESS, &h_key);
+	if (current_user_open != ERROR_SUCCESS)
+	{
+		const auto set_value_res = RegCreateKeyW(key, sub_key.c_str(), &h_key);
+		std::cout << set_value_res;
 	}
-	return hKey;
+	return h_key;
 }
 
 
-void RegisterySettingsManager::SaveSetting(std::wstring key, std::wstring setting, std::wstring subKey, HKEY rootkey)
+void RegisterySettingsManager::SaveSetting(const std::wstring& key, const std::wstring& setting, const std::wstring&
+                                           sub_key, HKEY root_key)
 {
-	HKEY hKey = GetKey(subKey, rootkey);
+	auto* const h_key = GetKey(sub_key, root_key);
 
-	LONG setValueRes = RegSetValueExW(hKey, key.c_str(), 0, REG_SZ, (LPBYTE)setting.c_str(), (setting.size() + 1) * sizeof(wchar_t));
-	if (setValueRes != ERROR_SUCCESS)
+	const auto set_value_res = RegSetValueExW(h_key, key.c_str(), 0, REG_SZ, (LPBYTE)setting.c_str(),
+		(setting.size() + 1) * sizeof(wchar_t));
+	if (set_value_res != ERROR_SUCCESS)
 		return;
-	RegCloseKey(hKey);
+	RegCloseKey(h_key);
 }
 
-std::wstring RegisterySettingsManager::GetStringSetting(std::wstring key, std::wstring subKey)
+std::wstring RegisterySettingsManager::GetStringSetting(const std::wstring& key, const std::wstring& sub_key)
 {
-	HKEY hKey = GetKey(subKey);
+	auto* const h_key = GetKey(sub_key);
 
 	WCHAR szBuffer[512];
 	DWORD dwBufferSize = sizeof(szBuffer);
-	ULONG nError;
-	nError = RegQueryValueExW(hKey, key.c_str(), 0, NULL, (LPBYTE)szBuffer, &dwBufferSize);
-	RegCloseKey(hKey);
-	if (ERROR_SUCCESS == nError)
+	const ULONG n_error = RegQueryValueExW(h_key, key.c_str(), nullptr, nullptr, (LPBYTE)szBuffer, &dwBufferSize);
+	RegCloseKey(h_key);
+	if (ERROR_SUCCESS == n_error)
 	{
 		return szBuffer;
 	}
 	return std::wstring();
 }
 
-void RegisterySettingsManager::SaveSetting(std::wstring key, int setting, std::wstring subKey)
+void RegisterySettingsManager::SaveSetting(const std::wstring& key, int setting, const std::wstring& sub_key)
 {
-	HKEY hKey = GetKey(subKey);
+	auto* const h_key = GetKey(sub_key);
 
-
-	LONG setValueRes = RegSetValueExW(hKey, key.c_str(), 0, REG_DWORD, (const BYTE*)&setting, sizeof(setting));
-	if (setValueRes != ERROR_SUCCESS)
+	const auto set_value_res = RegSetValueExW(h_key, key.c_str(), 0, REG_DWORD, (const BYTE*)&setting, sizeof(setting));
+	if (set_value_res != ERROR_SUCCESS)
 		return;
-	RegCloseKey(hKey);
+	RegCloseKey(h_key);
 }
 
-int RegisterySettingsManager::GetIntSetting(std::wstring key, std::wstring subKey)
+int RegisterySettingsManager::GetIntSetting(const std::wstring& key, const std::wstring& sub_key)
 {
-	HKEY hKey = GetKey(subKey);
+	auto* const h_key = GetKey(sub_key);
 
 	DWORD dwBufferSize(sizeof(DWORD));
-	DWORD nResult(0);
-	LONG nError = ::RegQueryValueExW(hKey,
+	DWORD n_result(0);
+	auto nError = ::RegQueryValueExW(h_key,
 		key.c_str(),
-		0,
-		NULL,
-		reinterpret_cast<LPBYTE>(&nResult),
+		nullptr,
+		nullptr,
+		reinterpret_cast<LPBYTE>(&n_result),
 		&dwBufferSize);
-	RegCloseKey(hKey);
-	return nResult;
+	RegCloseKey(h_key);
+	return n_result;
 }
 
-void RegisterySettingsManager::DeleteSetting(std::wstring key, std::wstring subKey)
+void RegisterySettingsManager::DeleteSetting(const std::wstring& key, const std::wstring& subKey)
 {
-	HKEY hKey = GetKey(subKey);
-	LONG delValueRes = RegDeleteValueW(hKey, key.c_str());
+	auto* const h_key = GetKey(subKey);
+	const auto del_value_res = RegDeleteValueW(h_key, key.c_str());
 
-	if (delValueRes != ERROR_SUCCESS)
+	if (del_value_res != ERROR_SUCCESS)
 		return;
-	RegCloseKey(hKey);
+	RegCloseKey(h_key);
 }

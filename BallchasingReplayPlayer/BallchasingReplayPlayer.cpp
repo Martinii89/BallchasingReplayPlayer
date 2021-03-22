@@ -29,14 +29,12 @@ void BallchasingReplayPlayer::onUnload()
 	}
 }
 
-void BallchasingReplayPlayer::RegisterURIHandler()
+void BallchasingReplayPlayer::RegisterURIHandler() const
 {
-	RegisterySettingsManager settings;
-
-	settings.SaveSetting(L"", L"URL:ballchasing protocol", L"Software\\Classes\\ballchasing", HKEY_CURRENT_USER);
-	settings.SaveSetting(L"URL Protocol", L"ballchasing", L"Software\\Classes\\ballchasing", HKEY_CURRENT_USER);
+	RegisterySettingsManager::SaveSetting(L"", L"URL:ballchasing protocol", L"Software\\Classes\\ballchasing", HKEY_CURRENT_USER);
+	RegisterySettingsManager::SaveSetting(L"URL Protocol", L"ballchasing", L"Software\\Classes\\ballchasing", HKEY_CURRENT_USER);
 	const auto* const command = L"cmd /c echo  %1 > \\\\.\\pipe\\ballchasing";
-	settings.SaveSetting(L"", command, L"Software\\Classes\\ballchasing\\shell\\open\\command", HKEY_CURRENT_USER);
+	RegisterySettingsManager::SaveSetting(L"", command, L"Software\\Classes\\ballchasing\\shell\\open\\command", HKEY_CURRENT_USER);
 }
 
 void BallchasingReplayPlayer::ProcessPipeMessage(std::string replay_id)

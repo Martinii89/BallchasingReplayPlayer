@@ -14,7 +14,7 @@ class BallchasingReplayPlayer: public BakkesMod::Plugin::BakkesModPlugin/*, publ
 	//Boilerplate
 	virtual void onLoad();
 	virtual void onUnload();
-	void RegisterURIHandler();
+	void RegisterURIHandler() const;
 	void ProcessPipeMessage(std::string replay_id);
 
 	bool pipe_server_running = true;
