@@ -11,11 +11,83 @@ BAKKESMOD_PLUGIN(BallchasingReplayPlayer, "BallchasingProtocolHandler", plugin_v
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
+struct EnumWindowsCallbackArgs {
+    EnumWindowsCallbackArgs( DWORD p ) : pid( p ) { }
+    const DWORD pid;
+    std::vector<HWND> handles;
+};
+
+static BOOL CALLBACK EnumWindowsCallback( HWND hnd, LPARAM lParam )
+{
+    EnumWindowsCallbackArgs *args = (EnumWindowsCallbackArgs *)lParam;
+
+    DWORD windowPID;
+    (void)::GetWindowThreadProcessId( hnd, &windowPID );
+    if ( windowPID == args->pid ) {
+        args->handles.push_back( hnd );
+    }
+
+    return TRUE;
+}
+
+std::vector<HWND> getToplevelWindows()
+{
+    EnumWindowsCallbackArgs args( ::GetCurrentProcessId() );
+    if ( ::EnumWindows( &EnumWindowsCallback, (LPARAM) &args ) == FALSE ) {
+      // XXX Log error here
+      return std::vector<HWND>();
+    }
+    return args.handles;
+}
+
+void BallchasingReplayPlayer::MoveGameToFront() {
+	auto handles = getToplevelWindows();
+	LOG("handles: {}", handles.size());
+	for(auto* h: handles)
+	{
+		int const   bufferSize  = 1 + GetWindowTextLength( h );
+		std::wstring     title( bufferSize, L'\0' );
+		int const   nChars  = GetWindowText( h, &title[0], bufferSize );
+		if (title.find(L"Rocket League (64-bit, DX11, Cooked)") != std::wstring::npos)
+		{
+			::SetForegroundWindow(h);
+			::ShowWindow(h, SW_RESTORE);
+			//::SetWindowPos(h,       // handle to window
+			//	HWND_TOPMOST,  // placement-order handle
+			//	0,     // horizontal position
+			//	0,      // vertical position
+			//	0,  // width
+			//	0, // height
+			//	SWP_SHOWWINDOW|SWP_NOSIZE|SWP_NOMOVE// window-positioning options
+			//);
+			break;
+		}
+	}
+}
+
 void BallchasingReplayPlayer::onLoad()
 {
 	_globalCvarManager = cvarManager;
 	RegisterURIHandler();
 	pipe_server_thread_ = std::thread{&BallchasingReplayPlayer::StartPipeServer, this};
+
+	cvarManager->registerNotifier("ballchasing_viewer", [this](std::vector<std::string> args)
+	{
+		if (args.size() < 2)
+		{
+			return;
+		}
+		auto& command_argument = args[1];
+		if (command_argument == "available")
+		{
+			cvarManager->executeCommand("sendback \"true");
+		}else
+		{
+			DownloadAndPlayReplay(command_argument);
+			cvarManager->executeCommand(fmt::format("sendback \"Attempting to download and open the replay with id {}\"", command_argument));
+		}
+		
+	}, "", 0);
 }
 
 void BallchasingReplayPlayer::onUnload()
@@ -37,12 +109,13 @@ void BallchasingReplayPlayer::RegisterURIHandler() const
 	RegisterySettingsManager::SaveSetting(L"", command, L"Software\\Classes\\ballchasing\\shell\\open\\command", HKEY_CURRENT_USER);
 }
 
-void BallchasingReplayPlayer::ProcessPipeMessage(std::string replay_id)
+void BallchasingReplayPlayer::DownloadAndPlayReplay(std::string replay_id)
 {
-	std::vector<std::string> splitted;
-	split(replay_id, splitted, '/');
-	replay_id = splitted[splitted.size() - 1];
+	//std::vector<std::string> splitted;
+	//split(replay_id, splitted, '/');
+	//replay_id = splitted[splitted.size() - 1];
 	replay_id = trim(replay_id);
+	MoveGameToFront();
 	const auto download_url = fmt::format("https://ballchasing.com/dl/replay/{}", replay_id);
 	HttpWrapper::SendRequest(download_url, "POST", {}, [this, replay_id](HttpResponseWrapper res)
 	{
@@ -110,7 +183,7 @@ void BallchasingReplayPlayer::StartPipeServer()
 			{
 				/* add terminating zero */
 				buffer[dwRead] = '\0';
-				gameWrapper->Execute([this, msg = std::string(buffer)](...) { ProcessPipeMessage(msg); });
+				gameWrapper->Execute([this, msg = std::string(buffer)](...) { DownloadAndPlayReplay(msg); });
 			}
 		}
 		DisconnectNamedPipe(hPipe);

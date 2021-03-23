@@ -9,13 +9,13 @@ constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_M
 
 class BallchasingReplayPlayer: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginWindow*/
 {
-
+	static void MoveGameToFront();
 	//std::shared_ptr<bool> enabled;
 	//Boilerplate
 	virtual void onLoad();
 	virtual void onUnload();
 	void RegisterURIHandler() const;
-	void ProcessPipeMessage(std::string replay_id);
+	void DownloadAndPlayReplay(std::string replay_id);
 
 	bool pipe_server_running = true;
 	std::thread pipe_server_thread_;
