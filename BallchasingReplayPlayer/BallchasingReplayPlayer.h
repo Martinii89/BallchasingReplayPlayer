@@ -17,6 +17,13 @@ class BallchasingReplayPlayer: public BakkesMod::Plugin::BakkesModPlugin/*, publ
 	void RegisterURIHandler() const;
 	void DownloadAndPlayReplay(std::string replay_id);
 
+	float download_progress = 0;
+	std::unique_ptr<ImageWrapper> progress_texture;
+	
+	void DrawDownloadProgress(CanvasWrapper canvas) const;
+	void DrawProgressBar(CanvasWrapper canvas, float percent_factor) const;
+	
+
 	bool pipe_server_running = true;
 	std::thread pipe_server_thread_;
 	void StartPipeServer();
