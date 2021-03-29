@@ -10,10 +10,12 @@ constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_M
 class BallchasingReplayPlayer: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginWindow*/
 {
 	static void MoveGameToFront();
-	//std::shared_ptr<bool> enabled;
+	const std::string notifer_name_ = "ballchasing_viewer";
+	
 	//Boilerplate
 	virtual void onLoad();
 	virtual void onUnload();
+	void RegisterRCONWhitelist() const;
 	void RegisterURIHandler() const;
 	void DownloadAndPlayReplay(std::string replay_id);
 

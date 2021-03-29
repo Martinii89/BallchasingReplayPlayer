@@ -104,6 +104,7 @@ void BallchasingReplayPlayer::onLoad()
 {
 	_globalCvarManager = cvarManager;
 	RegisterURIHandler();
+	RegisterRCONWhitelist();
 	auto progress_bar_path = gameWrapper->GetDataFolder() / "ballchasing" / "progress_bar.png";
 	progress_texture = std::make_unique<ImageWrapper>(progress_bar_path);
 	pipe_server_thread_ = std::thread{&BallchasingReplayPlayer::StartPipeServer, this};
@@ -122,7 +123,7 @@ void BallchasingReplayPlayer::onLoad()
 	//});
 
 
-	cvarManager->registerNotifier("ballchasing_viewer", [this](std::vector<std::string> args)
+	cvarManager->registerNotifier(notifer_name_, [this](std::vector<std::string> args)
 	{
 		if (args.size() < 2)
 		{
@@ -131,7 +132,7 @@ void BallchasingReplayPlayer::onLoad()
 		auto& command_argument = args[1];
 		if (command_argument == "available")
 		{
-			cvarManager->executeCommand("sendback \"true");
+			cvarManager->executeCommand("sendback \"true", false);
 		}
 		else
 		{
@@ -150,6 +151,34 @@ void BallchasingReplayPlayer::onUnload()
 	{
 		//LOG("Joining pipe server thread");
 		pipe_server_thread_.join();
+	}
+}
+
+void BallchasingReplayPlayer::RegisterRCONWhitelist() const
+{
+	try
+	{
+		const auto whitelist_path = gameWrapper->GetDataFolder() / "rcon_commands.cfg";
+		auto whitelist = std::fstream{whitelist_path, std::ios::app | std::ios::in | std::ios::out};
+		std::string line;
+		while (std::getline(whitelist, line))
+		{
+			if (line == notifer_name_)
+			{
+				LOG("RCON command already whitelisted");
+				return;
+			}
+		}
+
+		LOG("Adding RCON command to whitelist ({})", notifer_name_);
+		whitelist.clear();
+		whitelist << std::endl << notifer_name_;
+		whitelist.close();
+		cvarManager->executeCommand("rcon_refresh_allowed");
+	}
+	catch (std::exception& e)
+	{
+		LOG("Exception in RegisterRCONWhitelist:\n{}", e.what());
 	}
 }
 
