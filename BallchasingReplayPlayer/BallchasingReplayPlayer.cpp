@@ -216,7 +216,8 @@ void BallchasingReplayPlayer::DownloadAndPlayReplay(std::string replay_id)
 	req.verb = "POST";
 	req.progress_function = [this](auto max, auto current, ...)
 	{
-		LOG("Download progress: {}/{}", current, max);
+		// Really spammy 
+		//LOG("Download progress: {}/{}", current, max);
 		if (max == 0 && current != 0)
 		{
 			download_progress += 0.05f;
@@ -297,7 +298,9 @@ void BallchasingReplayPlayer::DownloadAndPlayReplayWithAuthentication(std::strin
 	req.headers["Authorization"] = api_key;
 	req.progress_function = [this](auto max, auto current, ...)
 	{
-		LOG("Download progress: {}/{}", current, max);
+		// Really spammy
+		//LOG("Download progress: {}/{}", current, max);
+		
 		if (max == 0 && current != 0)
 		{
 			download_progress += 0.05f;
