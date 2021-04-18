@@ -18,6 +18,7 @@ class BallchasingReplayPlayer: public BakkesMod::Plugin::BakkesModPlugin/*, publ
 	void RegisterRCONWhitelist() const;
 	void RegisterURIHandler() const;
 	void DownloadAndPlayReplay(std::string replay_id);
+	void DownloadAndPlayReplayWithAuthentication(std::string replay_id);
 
 	float download_progress = 0;
 	std::unique_ptr<ImageWrapper> progress_texture;

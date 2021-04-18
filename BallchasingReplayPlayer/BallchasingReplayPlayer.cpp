@@ -46,7 +46,7 @@ std::vector<HWND> getToplevelWindows()
 void BallchasingReplayPlayer::MoveGameToFront()
 {
 	auto handles = getToplevelWindows();
-	LOG("handles: {}", handles.size());
+	//LOG("handles: {}", handles.size());
 	for (auto* h : handles)
 	{
 		int const bufferSize = 1 + GetWindowTextLength(h);
@@ -201,7 +201,7 @@ void BallchasingReplayPlayer::DownloadAndPlayReplay(std::string replay_id)
 	const auto save_path = gameWrapper->GetDataFolder() / "ballchasing" / "dl";
 	const auto file_path = save_path / (replay_id + ".replay");
 
-	if (exists(file_path))
+	if (exists(file_path) && file_size(file_path) > 0)
 	{
 		LOG("Replay for this id already downloaded. Using cached file");
 		gameWrapper->Execute([this, path = file_path.wstring()](...)
@@ -235,12 +235,101 @@ void BallchasingReplayPlayer::DownloadAndPlayReplay(std::string replay_id)
 
 
 	create_directories(save_path);
-	HttpWrapper::SendCurlRequest(req, file_path, [this](int code, const std::wstring& path)
+	HttpWrapper::SendCurlRequest(req, file_path, [this, replay_id](int code, const std::wstring& path)
 	{
 		gameWrapper->UnregisterDrawables();
 		//LOG("Download request returned");
 		if (code != 200)
 		{
+			try
+			{
+				remove(std::filesystem::path(path));
+			}
+			catch (std::filesystem::filesystem_error& e)
+			{
+				LOG("Error while deleting bad file: {}", e.what());
+			}
+			if (code == 404)
+			{
+				LOG("404 response. Trying to download it from the api with a API key");
+				DownloadAndPlayReplayWithAuthentication(replay_id);
+				return;
+			}
+			LOG("Error: response code not 200: (was {})", code);
+			return;
+		}
+		gameWrapper->Execute([this, path](...)
+		{
+			gameWrapper->PlayReplay(path);
+		});
+	});
+}
+
+void BallchasingReplayPlayer::DownloadAndPlayReplayWithAuthentication(std::string replay_id)
+{
+	const auto api_key = cvarManager->getCvar("cl_autoreplayupload_ballchasing_authkey").getStringValue();
+	if (api_key.empty())
+	{
+		LOG("No api key set in the auto replay uploader. Aborting API download");
+		return;
+	}
+	
+	replay_id = trim(replay_id);
+	MoveGameToFront();
+	const auto download_url = fmt::format("https://ballchasing.com/api/replays/{}/file", replay_id);
+	LOG("Requesting {}", download_url);
+	const auto save_path = gameWrapper->GetDataFolder() / "ballchasing" / "dl";
+	const auto file_path = save_path / (replay_id + ".replay");
+
+	if (exists(file_path) && file_size(file_path) > 0)
+	{
+		LOG("Replay for this id already downloaded. Using cached file");
+		gameWrapper->Execute([this, path = file_path.wstring()](...)
+		{
+			gameWrapper->PlayReplay(path);
+		});
+		return;
+	}
+
+	CurlRequest req;
+	req.url = download_url;
+	req.verb = "GET";
+	req.headers["Authorization"] = api_key;
+	req.progress_function = [this](auto max, auto current, ...)
+	{
+		LOG("Download progress: {}/{}", current, max);
+		if (max == 0 && current != 0)
+		{
+			download_progress += 0.05f;
+			if (download_progress > 1)
+			{
+				download_progress = 0;
+			}
+		}
+		else
+		{
+			download_progress = (current / max);
+		}
+	};
+	download_progress = 0;
+	gameWrapper->RegisterDrawable([this](auto canvas) { DrawDownloadProgress(canvas); });
+
+
+	create_directories(save_path);
+	HttpWrapper::SendCurlRequest(req, file_path, [this, replay_id](int code, const std::wstring& path)
+	{
+		gameWrapper->UnregisterDrawables();
+		//LOG("Download request returned");
+		if (code != 200)
+		{
+			try
+			{
+				remove(std::filesystem::path(path));
+			}
+			catch (std::filesystem::filesystem_error& e)
+			{
+				LOG("Error while deleting bad file: {}", e.what());
+			}
 			LOG("Error: response code not 200: (was {})", code);
 			return;
 		}
