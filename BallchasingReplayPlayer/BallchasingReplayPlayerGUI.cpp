@@ -1,64 +1,35 @@
 #include "pch.h"
 #include "BallchasingReplayPlayer.h"
 
-/*
-// Do ImGui rendering here
-void BallchasingReplayPlayer::Render()
+static void HelpMarker(const char* desc)
 {
-	if (!ImGui::Begin(menuTitle_.c_str(), &isWindowOpen_, ImGuiWindowFlags_None))
-	{
-		// Early out if the window is collapsed, as an optimization.
-		ImGui::End();
-		return;
-	}
-
-	ImGui::End();
-
-	if (!isWindowOpen_)
-	{
-		cvarManager->executeCommand("togglemenu " + GetMenuName());
-	}
+    ImGui::TextDisabled("(?)");
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+        ImGui::TextUnformatted(desc);
+        ImGui::PopTextWrapPos();
+        ImGui::EndTooltip();
+    }
 }
 
-// Name of the menu that is used to toggle the window.
-std::string BallchasingReplayPlayer::GetMenuName()
+std::string BallchasingReplayPlayer::GetPluginName()
 {
-	return "BallchasingReplayPlayer";
+	return "Ballchasing Replay Viewer";
 }
 
-// Title to give the menu
-std::string BallchasingReplayPlayer::GetMenuTitle()
-{
-	return menuTitle_;
-}
-
-// Don't call this yourself, BM will call this function with a pointer to the current ImGui context
 void BallchasingReplayPlayer::SetImGuiContext(uintptr_t ctx)
 {
 	ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(ctx));
 }
 
-// Should events such as mouse clicks/key inputs be blocked so they won't reach the game
-bool BallchasingReplayPlayer::ShouldBlockInput()
+void BallchasingReplayPlayer::RenderSettings()
 {
-	return ImGui::GetIO().WantCaptureMouse || ImGui::GetIO().WantCaptureKeyboard;
+	if (ImGui::Button("Fix command whitelist"))
+	{
+		RegisterRCONWhitelist();
+	}
+	ImGui::SameLine();
+	HelpMarker("Check the F6 Console for the result");
 }
-
-// Return true if window should be interactive
-bool BallchasingReplayPlayer::IsActiveOverlay()
-{
-	return true;
-}
-
-// Called when window is opened
-void BallchasingReplayPlayer::OnOpen()
-{
-	isWindowOpen_ = true;
-}
-
-// Called when window is closed
-void BallchasingReplayPlayer::OnClose()
-{
-	isWindowOpen_ = false;
-}
-*/

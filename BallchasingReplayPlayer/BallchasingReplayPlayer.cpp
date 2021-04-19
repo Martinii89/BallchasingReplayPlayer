@@ -104,24 +104,14 @@ void BallchasingReplayPlayer::onLoad()
 {
 	_globalCvarManager = cvarManager;
 	RegisterURIHandler();
-	RegisterRCONWhitelist();
+	gameWrapper->SetTimeout([this](...)
+	{
+		// Seems to fail some times. might have better luck with a timeout here?
+		RegisterRCONWhitelist();
+	}, 2.0);
 	auto progress_bar_path = gameWrapper->GetDataFolder() / "ballchasing" / "progress_bar.png";
 	progress_texture = std::make_unique<ImageWrapper>(progress_bar_path);
 	pipe_server_thread_ = std::thread{&BallchasingReplayPlayer::StartPipeServer, this};
-
-	//gameWrapper->RegisterDrawable([this](CanvasWrapper canvas)
-	//{
-	//	static float percent = 0;
-	//	static int blend_mode = EBlendMode_BLEND_Masked;
-	//	percent += 0.01f;
-	//	if (percent > 1)
-	//	{
-	//		percent = 0;
-	//		//blend_mode++;
-	//	}
-	//	DrawProgressBar(canvas, percent);
-	//});
-
 
 	cvarManager->registerNotifier(notifer_name_, [this](std::vector<std::string> args)
 	{
@@ -133,13 +123,15 @@ void BallchasingReplayPlayer::onLoad()
 		if (command_argument == "available")
 		{
 			cvarManager->executeCommand("sendback \"true", false);
+			return;
 		}
-		else
+		std::string token;
+		if (args.size() >= 3)
 		{
-			DownloadAndPlayReplay(command_argument);
-			cvarManager->executeCommand(
-				fmt::format("sendback \"Attempting to download and open the replay with id {}\"", command_argument));
+			token = args[2];
 		}
+		DownloadAndPlayReplay(command_argument, token);
+		cvarManager->executeCommand(fmt::format("sendback \"Attempting to download and open the replay with id {}\"", command_argument));
 	}, "", 0);
 }
 
@@ -179,6 +171,7 @@ void BallchasingReplayPlayer::RegisterRCONWhitelist() const
 	catch (std::exception& e)
 	{
 		LOG("Exception in RegisterRCONWhitelist:\n{}", e.what());
+		gameWrapper->Toast("Ballchasing Replay Viewer", fmt::format("Exception in RegisterRCONWhitelist:\n{}", e.what()));
 	}
 }
 
@@ -193,11 +186,11 @@ void BallchasingReplayPlayer::RegisterURIHandler() const
 		HKEY_CURRENT_USER);
 }
 
-void BallchasingReplayPlayer::DownloadAndPlayReplay(std::string replay_id)
+void BallchasingReplayPlayer::DownloadAndPlayReplay(std::string replay_id, std::string token)
 {
 	replay_id = trim(replay_id);
 	MoveGameToFront();
-	const auto download_url = fmt::format("https://ballchasing.com/dl/replay/{}", replay_id);
+	const auto download_url = fmt::format("https://ballchasing.com/dl/replay/{}?token={}", replay_id, token);
 	const auto save_path = gameWrapper->GetDataFolder() / "ballchasing" / "dl";
 	const auto file_path = save_path / (replay_id + ".replay");
 
@@ -210,6 +203,7 @@ void BallchasingReplayPlayer::DownloadAndPlayReplay(std::string replay_id)
 		});
 		return;
 	}
+	LOG("Attempting to download the replay with id {}", replay_id);
 
 	CurlRequest req;
 	req.url = download_url;
@@ -218,89 +212,6 @@ void BallchasingReplayPlayer::DownloadAndPlayReplay(std::string replay_id)
 	{
 		// Really spammy 
 		//LOG("Download progress: {}/{}", current, max);
-		if (max == 0 && current != 0)
-		{
-			download_progress += 0.05f;
-			if (download_progress > 1)
-			{
-				download_progress = 0;
-			}
-		}
-		else
-		{
-			download_progress = (current / max);
-		}
-	};
-	download_progress = 0;
-	gameWrapper->RegisterDrawable([this](auto canvas) { DrawDownloadProgress(canvas); });
-
-
-	create_directories(save_path);
-	HttpWrapper::SendCurlRequest(req, file_path, [this, replay_id](int code, const std::wstring& path)
-	{
-		gameWrapper->UnregisterDrawables();
-		//LOG("Download request returned");
-		if (code != 200)
-		{
-			try
-			{
-				remove(std::filesystem::path(path));
-			}
-			catch (std::filesystem::filesystem_error& e)
-			{
-				LOG("Error while deleting bad file: {}", e.what());
-			}
-			if (code == 404)
-			{
-				LOG("404 response. Trying to download it from the api with a API key");
-				DownloadAndPlayReplayWithAuthentication(replay_id);
-				return;
-			}
-			LOG("Error: response code not 200: (was {})", code);
-			return;
-		}
-		gameWrapper->Execute([this, path](...)
-		{
-			gameWrapper->PlayReplay(path);
-		});
-	});
-}
-
-void BallchasingReplayPlayer::DownloadAndPlayReplayWithAuthentication(std::string replay_id)
-{
-	const auto api_key = cvarManager->getCvar("cl_autoreplayupload_ballchasing_authkey").getStringValue();
-	if (api_key.empty())
-	{
-		LOG("No api key set in the auto replay uploader. Aborting API download");
-		return;
-	}
-	
-	replay_id = trim(replay_id);
-	MoveGameToFront();
-	const auto download_url = fmt::format("https://ballchasing.com/api/replays/{}/file", replay_id);
-	LOG("Requesting {}", download_url);
-	const auto save_path = gameWrapper->GetDataFolder() / "ballchasing" / "dl";
-	const auto file_path = save_path / (replay_id + ".replay");
-
-	if (exists(file_path) && file_size(file_path) > 0)
-	{
-		LOG("Replay for this id already downloaded. Using cached file");
-		gameWrapper->Execute([this, path = file_path.wstring()](...)
-		{
-			gameWrapper->PlayReplay(path);
-		});
-		return;
-	}
-
-	CurlRequest req;
-	req.url = download_url;
-	req.verb = "GET";
-	req.headers["Authorization"] = api_key;
-	req.progress_function = [this](auto max, auto current, ...)
-	{
-		// Really spammy
-		//LOG("Download progress: {}/{}", current, max);
-		
 		if (max == 0 && current != 0)
 		{
 			download_progress += 0.05f;
@@ -348,8 +259,8 @@ void BallchasingReplayPlayer::DrawDownloadProgress(CanvasWrapper canvas) const
 	if (download_progress > 0 && download_progress < 100)
 	{
 		auto start = canvas.GetSize();
-		start.Y *= 0.67; // NOLINT(bugprone-narrowing-conversions)
-		start.X *= 0.5; // NOLINT(bugprone-narrowing-conversions)
+		start.Y *= 0.67;
+		start.X *= 0.5;
 		canvas.SetPosition(start);
 
 		DrawProgressBar(canvas, download_progress);
@@ -432,3 +343,5 @@ void BallchasingReplayPlayer::StartPipeServer()
 	pipe_server_running = false;
 	//LOG("Pipe server stopping");
 }
+
+
