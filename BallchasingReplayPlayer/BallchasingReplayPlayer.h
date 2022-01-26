@@ -24,7 +24,7 @@ public:
 private:
 	const std::string notifer_name_ = "ballchasing_viewer";
 	WsServer ws_server_;
-	const uint16_t ws_port_ = 9420;
+	const uint16_t ws_port_ = 20452;
 
 	float download_progress = 0;
 	std::unique_ptr<ImageWrapper> progress_texture;
