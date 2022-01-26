@@ -2,6 +2,12 @@
 
 #define WIN32_LEAN_AND_MEAN
 #define _CRT_SECURE_NO_WARNINGS
+
+#define ASIO_STANDALONE
+ 
+#include "websocketpp/config/asio_no_tls.hpp"
+#include "websocketpp/server.hpp"
+
 #include "bakkesmod/plugin/bakkesmodplugin.h"
 
 #include <string>

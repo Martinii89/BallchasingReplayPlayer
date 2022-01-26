@@ -72,7 +72,13 @@
     <ClCompile Include="fmt\src\os.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SettingsManager.cpp">
+    <ClCompile Include="GameWindowFocuser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WsServer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ScopeExec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -125,7 +131,13 @@
     <ClInclude Include="version.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SettingsManager.h">
+    <ClInclude Include="GameWindowFocuser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WsServer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScopeExec.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
