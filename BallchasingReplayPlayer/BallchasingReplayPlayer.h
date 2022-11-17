@@ -22,6 +22,7 @@ public:
 	void SetImGuiContext(uintptr_t ctx) override;
 
 private:
+	std::shared_ptr<bool> m_bringWindowToFront;
 	const std::string notifer_name_ = "ballchasing_viewer";
 	WsServer ws_server_;
 	const uint16_t ws_port_ = 20452;

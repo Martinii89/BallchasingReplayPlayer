@@ -13,5 +13,6 @@ void BallchasingReplayPlayer::SetImGuiContext(uintptr_t ctx)
 
 void BallchasingReplayPlayer::RenderSettings()
 {
+	ImGui::Checkbox("Activate game on replay download", m_bringWindowToFront.get());
     ImGui::Text("Open the ballchasing website while the plugin is running.\nThe website will show new buttons for downloading and playing the replays");
 }

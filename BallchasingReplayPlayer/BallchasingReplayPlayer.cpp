@@ -55,6 +55,8 @@ void BallchasingReplayPlayer::InitWsServer()
 void BallchasingReplayPlayer::onLoad()
 {
 	_globalCvarManager = cvarManager;
+	m_bringWindowToFront = std::make_shared<bool>(true);
+	cvarManager->registerCvar("ballchasing_replay_player_bring_to_frong", "1").bindTo(m_bringWindowToFront);
 
 	auto progress_bar_path = gameWrapper->GetDataFolder() / "ballchasing" / "progress_bar.png";
 	progress_texture = std::make_unique<ImageWrapper>(progress_bar_path);
@@ -71,7 +73,10 @@ void BallchasingReplayPlayer::onUnload()
 void BallchasingReplayPlayer::DownloadAndPlayReplay(std::string replay_id, std::string token)
 {
 	replay_id = trim(replay_id);
-	GameWindowFocuser::MoveGameToFront();
+	if (*m_bringWindowToFront)
+	{
+		GameWindowFocuser::MoveGameToFront();	
+	}
 	const auto download_url = fmt::format("https://ballchasing.com/dl/replay/{}?token={}", replay_id, token);
 	const auto save_path = gameWrapper->GetDataFolder() / "ballchasing" / "dl";
 	const auto file_path = save_path / (replay_id + ".replay");

@@ -46,6 +46,7 @@ void GameWindowFocuser::MoveGameToFront()
 	{
 		int const bufferSize = 1 + GetWindowTextLength(h);
 		std::wstring title(bufferSize, L'\0');
+		GetWindowText(h, &title[0], bufferSize);
 
 		if (title.find(L"Rocket League (64-bit, DX11, Cooked)") != std::wstring::npos)
 		{
